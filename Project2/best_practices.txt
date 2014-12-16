@@ -1,0 +1,10 @@
+Best Practices Doc:
+
+When designing a tool that will be used others, it is important to keep in mind that
+the user cannot be trusted. You do not know what they will use your tool for and you
+should know that your tool can be used by any level of programmer and you must protect
+your tool from user error as best you can. This means catching exceptions where you can
+and informing the user of where errors are happening as best you can. When using Try/Catch
+exceptions handling you may need to nest these constructs in order to catch individual exceptions.
+You will not know what exceptions could be named in the class that someone may be using with your tool, and will therefore need to use catch(...) statements since you cannot catch them by name. 
+You will need to consider any case where exceptions can be thrown and correctly apply catch statements to these specific cases and throw appropriate errors. All in all, wherever the user can mess up, as far as you are concerned, they will and you need an appropriate response to these situations. 

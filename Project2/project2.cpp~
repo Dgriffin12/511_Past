@@ -1,0 +1,260 @@
+#ifndef STACK_H
+#define STACK_H
+#include <new>
+#include <iostream>
+using namespace std;
+
+
+template<class TYPE>
+class Stack
+{
+  public:
+    Stack();
+    Stack(const Stack&);
+    ~Stack();
+    Stack& operator=(const Stack&);
+    int count();
+    void push(const TYPE &element);
+    TYPE pop();
+    void print_all();
+  private:
+    static const int chunk_size;
+    unsigned maximum_size;
+    int current_size;
+    TYPE* base;
+};
+
+template<class TYPE>
+const int Stack<TYPE>::chunk_size=10;
+
+//Constructor
+template<class TYPE> //new, type constructor
+Stack<TYPE>::Stack()
+try : current_size(-1),maximum_size(chunk_size),base(new TYPE[chunk_size])
+{
+       //unnecessary, stack will not exist if an exception is thrown here.
+}catch(bad_alloc &ba)
+{
+        throw;
+}catch(...)
+{
+        throw;
+}
+
+
+//Copy Constructor
+template<class TYPE> //new, type constructor, assign operator
+Stack<TYPE>::Stack(const Stack<TYPE>& s)
+try :maximum_size(s.maximum_size), base(new TYPE[s.maximum_size]) //constructor, new
+{  
+        if(s.current_size>-1)
+        {
+                for(current_size=0; current_size<=s.current_size; current_size++)
+                {
+                        try
+                        {
+                                base[current_size]=s.base[current_size]; //assign operator
+                        }catch(...)
+                        {
+                                cerr << "Copy Constructor Error: Assignment Operator of class failed." << endl;
+                                base[current_size] = NULL;
+                                throw;
+                        }
+                }
+                current_size--;
+        }
+
+}catch(bad_alloc& ba)
+{
+        base = NULL;
+        throw;
+}catch(...)
+{
+        cerr << "Copy Constructor Error: Default Constructor of class failed." << endl;
+        base = NULL;
+        throw;
+}
+
+//Destructor
+template<class TYPE> //***destructors should NEVER throw an exception***
+Stack<TYPE>::~Stack()
+{
+  delete [] base;
+}
+
+//Equal Operator
+template<class TYPE> //new, type constructor, assignment operator
+Stack<TYPE>& Stack<TYPE>::operator=(const Stack<TYPE>& s)
+{
+  TYPE* old_base = NULL;
+  try
+  {
+        old_base = base;
+  }catch(...)
+  {
+        cerr << "Assignment operator of Stack Failed: Assignment operator of class failed." << endl;
+        old_base = NULL;
+        throw;
+  }
+  if(old_base != NULL)
+  {
+        int old_max_size = maximum_size;
+        int old_cur_size = current_size;
+        try
+        {
+                base=new TYPE[s.maximum_size]; //new, constructor
+        }catch(bad_alloc& ba)
+        {
+                base = old_base;
+                throw;
+        }catch(...)
+        {
+                cerr << "Assignment operator of Stack Failed: Default Constructor of class failed." << endl;
+                base = old_base;
+                throw;
+        }
+        if(base != old_base)
+        {
+                maximum_size=s.maximum_size;
+                current_size=s.current_size;
+                if(current_size>-1)
+                {
+                        for(int x=0; x<=current_size; x++)
+                        {
+                                try
+                                {
+                                        base[x]=s.base[x]; //assign operator
+                                }catch(...)
+                                {
+                                        cerr << "Assignment operator of Stack Failed: Assignment operator of class failed." << endl;
+                                        delete [] base;
+                                        base = old_base;
+                                        maximum_size = old_max_size;
+                                        current_size = old_cur_size;
+                                        throw;
+                                        break;
+                                }
+                        }
+                }
+                if(old_base != NULL)
+                {
+                        delete [] old_base;
+                }
+        }
+  }
+  return *this;
+}
+
+//Push Function
+template<class TYPE> //constructor and new can throw exceptions, assignment operator
+void Stack<TYPE>::push(const TYPE &element)
+{  
+        if(current_size+1==maximum_size-1)
+        {  
+		
+                maximum_size+=chunk_size; 
+                TYPE* new_buffer = NULL;
+	        try
+                {  
+                       new_buffer = new TYPE[maximum_size]; //new, constructor  
+                       current_size++;
+                }
+                catch(bad_alloc& ba)
+                {
+                       cerr << "Stack Push Error: Default Constructor of class failed." << endl;                 
+                       maximum_size-=chunk_size;
+                       current_size--;
+                       delete new_buffer;
+                       throw;
+                }catch(...)
+                {                      
+                       maximum_size-=chunk_size;
+                       current_size--;
+                       delete new_buffer;
+                       throw;
+                }
+                if(new_buffer != NULL)//passed first try/catches
+                {
+                        for(int x=0; x<current_size; x++)
+                        {
+                                try
+                                {
+                                        new_buffer[x]=base[x]; //assignment operator
+                                }catch(...)
+                                {       
+                                        cerr << "Stack Push Error: Assignment operator of class failed." << endl;                                             
+                                        delete new_buffer;
+                                        current_size--;
+                                        throw;
+                                        break;
+                                }
+                        }
+                }
+                if(new_buffer != NULL) //we have passed the above try/catches
+                {
+                        delete [] base;
+                        base=new_buffer;
+                        try
+                        {
+                                base[current_size]=element;
+                        }catch(...)
+                        {              
+                                cerr << "Stack Push Error: Assignment operator of class failed." << endl;                 
+                                current_size--;
+                                throw;
+                        }
+                }
+       }else //we have room on the stack for a new element
+       {     
+                try
+                {
+                        base[current_size]=element; //attempt to assign the new element
+                        current_size++; //increment current_size
+                }catch(...)
+                {
+                        cerr << "Stack Push Error: Assignment operator of class failed." << endl;
+                        current_size--; //revert current_size
+                        throw;
+                }
+        }
+                
+    
+}
+
+//Pop Function
+template<class TYPE>
+TYPE Stack<TYPE>::pop()
+{
+  if(current_size<0)
+    throw "Nothing to pop!";
+  try
+  {
+     
+        return base[current_size--]; //copy constructor of TYPE called
+  }catch(...)
+  {
+        cerr << "Stack Pop Error: copy constructor" << endl;
+        current_size++;
+        throw;
+  }
+}
+
+//Count function
+template<class TYPE>
+int Stack<TYPE>::count()
+{
+  return current_size+1;
+}
+
+//Debugging print function
+template<class TYPE>
+void Stack<TYPE>::print_all()
+{	
+	cout << "Count: " << count << endl;
+        cout << "Current Size: " << current_size << endl;
+        cout << "Max size: " << maximum_size << endl;
+        cout << "Base: " << base << endl;
+}
+
+#endif
+
